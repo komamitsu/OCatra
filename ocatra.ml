@@ -44,5 +44,5 @@ let run ?(port=59876) () =
 
 let say = HttpResponse.create_response
 
-let (@-) req = HttpParam.find req.param
+let (++>) req = HttpParam.find req.param
 

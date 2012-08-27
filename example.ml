@@ -10,8 +10,8 @@ let _ =
   get "/givemeyournameandage" (fun r ->
     say (
       TextHtml (
-        "<html><head><title>hello " ^ (r @- "name") ^ "</title></head>" ^
-        "<body><h3>you are " ^ (r @- "age") ^ " years old.</h3></body></html>")
+        "<html><head><title>hello " ^ r ++> "name" ^ "</title></head>" ^
+        "<body><h3>you are " ^ r ++> "age" ^ " years old.</h3></body></html>")
     ) ()
   );
 
