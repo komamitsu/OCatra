@@ -1,0 +1,9 @@
+*.cmi
+*.cmo
+*.cmx
+*.o
+*.swp
+main
+main.opt
+test
+test.opt
