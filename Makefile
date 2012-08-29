@@ -1,29 +1,31 @@
-all: ocatra.cmo ocatra.cmx
+all: main test example
+main: ocatra.cma ocatra.cmxa
+test: test.byte test.opt
+example: example.byte example.opt
 
 SOURCES = httpCommon.ml httpRequest.ml httpResponse.ml httpServer.ml ocatra.ml
+PACKAGES = unix,threads,str
+TEST_PACKAGES = $(PACKAGES),oUnit
 
-TEST_SOURCES = $(SOURCES) test.ml
+ocatra.cma: $(SOURCES)
+	ocamlfind c -a -o $@ -thread $^
 
-EXAMPLE_SOURCES = $(SOURCES) example.ml
+ocatra.cmxa: $(SOURCES)
+	ocamlfind opt -a -o $@ -thread $^
 
-ocatra.cmo: $(SOURCES)
-	ocamlfind c -c -thread -linkpkg -package unix,threads,str $(SOURCES)
+test.byte: ocatra.cma test.ml
+	ocamlfind c -o $@ -thread -linkpkg -package $(TEST_PACKAGES) $^
 
-ocatra.cmx: $(SOURCES)
-	ocamlfind opt -c -thread -linkpkg -package unix,threads,str $(SOURCES)
+test.opt: ocatra.cmxa test.ml
+	ocamlfind opt -o $@ -thread -linkpkg -package $(TEST_PACKAGES) $^
 
-test: $(TEST_SOURCES)
-	ocamlfind c -o test -thread -linkpkg -package unix,threads,str,oUnit  $(TEST_SOURCES)
+example.byte: ocatra.cma example.ml
+	ocamlfind c -o $@ -thread -linkpkg -package $(PACKAGES) $^
 
-test.opt: $(TEST_SOURCES)
-	ocamlfind opt -o test.opt -thread -linkpkg -package unix,threads,str,oUnit $(TEST_SOURCES)
-
-example: $(EXAMPLE_SOURCES)
-	ocamlfind c -o example -thread -linkpkg -package unix,threads,str $(EXAMPLE_SOURCES)
-
-example.opt: $(EXAMPLE_SOURCES)
-	ocamlfind opt -o example.opt -thread -linkpkg -package unix,threads,str $(EXAMPLE_SOURCES)
+example.opt: ocatra.cmxa example.ml
+	ocamlfind opt -o $@ -thread -linkpkg -package $(PACKAGES) $^
 
 clean:
-	rm -f *.cmo *.cmi *.cmx *.cma *.o test test.opt example example.opt
+	rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.o *.a test.byte test.opt example.byte example.opt
 
+.PHONY: all main test example
