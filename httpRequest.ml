@@ -8,7 +8,7 @@ type t = {
   param: string HttpParam.t;
   version: string;
   header: string HttpHeader.t;
-  content: HttpContent.t
+  content: HttpContent.t;
 }
 
 let re_for_path = Str.regexp "^[a-zA-Z0-9-_/]+"
@@ -96,4 +96,10 @@ let parse_request inch =
    version=req.version;
    header=req.header;
    content}
+
+let keepalive version header =
+  try 
+    let connection = HttpHeader.find header "Connection" in
+    connection <> "close"
+  with Not_found -> version = "HTTP/1.1"
 

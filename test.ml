@@ -80,6 +80,17 @@ module HttpRequestTest = struct
       let test () = parse_request inch in
       assert_raises (HttpError HttpStatus.BadRequest) test
     )
+
+  let test_keepalive () =
+    let header = HttpHeader.create 4 in
+    assert_equal true $ keepalive "HTTP/1.1" header;
+    assert_equal false $ keepalive "HTTP/1.0" header;
+    HttpHeader.replace header "Connection" "close";
+    assert_equal false $ keepalive "HTTP/1.1" header;
+    assert_equal false $ keepalive "HTTP/1.0" header;
+    HttpHeader.replace header "Connection" "Keep-Alive";
+    assert_equal true $ keepalive "HTTP/1.1" header;
+    assert_equal true $ keepalive "HTTP/1.0" header
  
   let suite = 
     "http_request" >:::
@@ -87,6 +98,7 @@ module HttpRequestTest = struct
         "test_parse_ok1" >:: test_parse_ok1;
         "test_parse_ok2" >:: test_parse_ok2;
         "test_parse_ng_comma_missing" >:: test_parse_ng_comma_missing;
+        "test_keepalive" >:: test_keepalive;
       ]
 end
 

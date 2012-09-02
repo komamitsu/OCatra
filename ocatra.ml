@@ -40,7 +40,7 @@ let run ?(port=59876) () =
           (HttpContent.TextPlain (HttpStatus.string_of_status st)) ()
       | Not_found -> create_response ~status:HttpStatus.NotFound
           (HttpContent.TextPlain "Not found") ()
-    )
+    ) ()
 
 let say = HttpResponse.create_response
 
