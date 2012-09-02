@@ -31,7 +31,9 @@ let start port proc ?(keepalive=Some(15.0)) () =
             | Some _ when OcatraHttpRequest.keepalive req.OcatraHttpRequest.version req.OcatraHttpRequest.header -> worker_loop ()
             | _ -> ()
         in
-        try worker_loop () with _ -> ();
+        begin
+          try worker_loop () with _ -> ()
+        end;
         close socket
       ) client_sock
     )
