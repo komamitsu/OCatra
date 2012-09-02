@@ -3,7 +3,7 @@ main: ocatra.cma ocatra.cmxa
 test: test.byte test.opt
 example: example.byte example.opt
 
-SOURCES = ocatraHttpCommon.ml ocatraHttpRequest.ml ocatraHttpResponse.ml ocatraHttpServer.ml ocatra.ml
+SOURCES = ocatraCommon.ml ocatraHttpCommon.ml ocatraHttpRequest.ml ocatraHttpResponse.ml ocatraHttpServer.ml ocatra.ml
 PACKAGES = unix,threads,str
 TEST_PACKAGES = $(PACKAGES),oUnit
 

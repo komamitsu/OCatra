@@ -1,11 +1,6 @@
 open Unix
 open Printf
-
-let (@@) f x = f x
-let ($) f g x = f (g x)
-
-let p s = print_endline s;
-  Pervasives.flush Pervasives.stdout
+open OcatraCommon
 
 module StatusCategory = struct
   type t = IntermediateStatus | SuccessfulResponse | Redirects | RequestErrors | ServerErrors
@@ -196,12 +191,6 @@ module Util = struct
           tbl
         end
         else raise (HttpError Status.BadRequest)) tbl qs
-
-  let log s = 
-    (*
-      print_endline s
-    *)
-    ()
 
   let http_error st = raise (HttpError st)
 end

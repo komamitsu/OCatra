@@ -1,4 +1,5 @@
 open String
+open OcatraCommon
 open OcatraHttpCommon
 open OcatraHttpCommon.Util
 

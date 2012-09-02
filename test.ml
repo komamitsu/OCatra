@@ -1,5 +1,6 @@
 open OUnit
 open String
+open OcatraCommon
 open OcatraHttpCommon
 
 module HttpRequestTest = struct
