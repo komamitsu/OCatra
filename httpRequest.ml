@@ -33,7 +33,7 @@ let re_for_request_line =
   Str.regexp "\\([A-Z]+\\) +\\([^ ]+\\) +\\(HTTP\\/[0-9]\\.[0-9]\\)"
 
 let parse_request_line line =
-  log $ "[parse_request_line] line=" ^ line;
+  log @@ "[parse_request_line] line=" ^ line;
   if Str.string_match re_for_request_line line 0 then
     let methd_str = Str.matched_group 1 line in
     let path_and_q_str = Str.matched_group 2 line in
@@ -55,7 +55,7 @@ let parse_header = function
     let (methd, path, param, version) = parse_request_line line in
     let tbl = 
       List.fold_left (fun tbl line -> 
-        log $ "[parse_header_line] " ^ line;
+        log @@ "[parse_header_line] " ^ line;
         let (key, value) = parse_header_line line in
         HttpHeader.replace tbl key value;
         tbl
@@ -75,7 +75,7 @@ let parse_request inch =
     let line = try input_line inch with End_of_file -> "" in
     let len = length line in
     let line = if len > 0 && line.[len - 1] = '\r' then sub line 0 (len - 1) else line in
-    log $ "[input_line] length=" ^ (string_of_int $ String.length line) ^ ", line=" ^ line;
+    log @@ "[input_line] length=" ^ (string_of_int @@ String.length line) ^ ", line=" ^ line;
     if line = "" then List.rev ls
     else _parse (line::ls)
   in

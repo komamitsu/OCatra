@@ -14,7 +14,7 @@ module HttpRequestTest = struct
       | None -> ()
       | Some content -> begin
           let len = String.length content in
-          output_string och $ "Content-Length: " ^ string_of_int len ^ "\r\n";
+          output_string och @@ "Content-Length: " ^ string_of_int len ^ "\r\n";
           output_string och "\r\n";
           output och content 0 len
         end
@@ -83,14 +83,14 @@ module HttpRequestTest = struct
 
   let test_keepalive () =
     let header = HttpHeader.create 4 in
-    assert_equal true $ keepalive "HTTP/1.1" header;
-    assert_equal false $ keepalive "HTTP/1.0" header;
+    assert_equal true @@ keepalive "HTTP/1.1" header;
+    assert_equal false @@ keepalive "HTTP/1.0" header;
     HttpHeader.replace header "Connection" "close";
-    assert_equal false $ keepalive "HTTP/1.1" header;
-    assert_equal false $ keepalive "HTTP/1.0" header;
+    assert_equal false @@ keepalive "HTTP/1.1" header;
+    assert_equal false @@ keepalive "HTTP/1.0" header;
     HttpHeader.replace header "Connection" "Keep-Alive";
-    assert_equal true $ keepalive "HTTP/1.1" header;
-    assert_equal true $ keepalive "HTTP/1.0" header
+    assert_equal true @@ keepalive "HTTP/1.1" header;
+    assert_equal true @@ keepalive "HTTP/1.0" header
  
   let suite = 
     "http_request" >:::
@@ -108,7 +108,7 @@ module HttpResponseTest = struct
   let test_response ?(status=HttpStatus.OK) ?(header=HttpHeader.create 0) content f =
     let filename = "test_response.txt" in
     let och = open_out filename in
-    response och $ create_response ~status:status ~header:header content ();
+    response och @@ create_response ~status:status ~header:header content ();
     close_out och;
     let inch = open_in filename in
     (f inch);
@@ -117,23 +117,23 @@ module HttpResponseTest = struct
 
   let test_ok1 () =
     test_response HttpContent.None (fun inch ->
-      assert_equal "HTTP/1.1 200 OK\r" $ input_line inch
+      assert_equal "HTTP/1.1 200 OK\r" @@ input_line inch
     )
 
   let test_ok2 () =
     let body = "Hello, World" in
     test_response (HttpContent.TextPlain body)
       (fun inch ->
-        assert_equal "HTTP/1.1 200 OK\r" $ input_line inch;
-        assert_equal "Content-Type: text/plain\r" $ input_line inch;
-        assert_equal ("Content-Length: " ^ string_of_int (length body) ^ "\r") $ input_line inch;
-        assert_equal "\r" $ input_line inch;
-        assert_equal body $ input_line inch
+        assert_equal "HTTP/1.1 200 OK\r" @@ input_line inch;
+        assert_equal "Content-Type: text/plain\r" @@ input_line inch;
+        assert_equal ("Content-Length: " ^ string_of_int (length body) ^ "\r") @@ input_line inch;
+        assert_equal "\r" @@ input_line inch;
+        assert_equal body @@ input_line inch
       )
 
   let test_ng_not_found () =
     test_response ~status:HttpStatus.NotFound HttpContent.None (fun inch ->
-      assert_equal "HTTP/1.1 404 Not Found\r" $ input_line inch
+      assert_equal "HTTP/1.1 404 Not Found\r" @@ input_line inch
     )
 
   let suite = 

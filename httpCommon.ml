@@ -1,7 +1,9 @@
 open Unix
 open Printf
 
-let ($) f g = f g
+let (@@) f x = f x
+let ($) f g x = f (g x)
+
 let p s = print_endline s;
   Pervasives.flush Pervasives.stdout
 
