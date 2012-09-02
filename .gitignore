@@ -2,8 +2,11 @@
 *.cmo
 *.cmx
 *.o
+*.a
 *.swp
-main
-main.opt
-test
+*.cma
+*.cmxa
+test.byte
 test.opt
+example.byte
+example.opt
