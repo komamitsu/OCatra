@@ -7,12 +7,12 @@ let ($) f g x = f (g x)
 let p s = print_endline s;
   Pervasives.flush Pervasives.stdout
 
-module HttpStatusCategory = struct
+module StatusCategory = struct
   type t = IntermediateStatus | SuccessfulResponse | Redirects | RequestErrors | ServerErrors
 end
 
-module HttpStatus = struct
-  open HttpStatusCategory
+module Status = struct
+  open StatusCategory
 
   type t =
     | Continue
@@ -144,10 +144,10 @@ module HttpStatus = struct
     | HTTPVersionNotSupported -> "505 HTTP Version Not Supported"
 end
 
-exception HttpError of HttpStatus.t
+exception HttpError of Status.t
 
-module HttpMethod = struct
-  open HttpStatus
+module Method = struct
+  open Status
 
   type t = Get | Post | Put | Delete
 
@@ -165,7 +165,7 @@ module HttpMethod = struct
     | Delete -> "DELETE"
 end
 
-module HttpHeader = Hashtbl.Make(
+module Header = Hashtbl.Make(
   struct
     type t = string
     let equal = (=)
@@ -173,7 +173,7 @@ module HttpHeader = Hashtbl.Make(
   end
 )
 
-module HttpParam = Hashtbl.Make(
+module Param = Hashtbl.Make(
   struct
     type t = string
     let equal = (=)
@@ -181,7 +181,7 @@ module HttpParam = Hashtbl.Make(
   end
 )
 
-module HttpUtil = struct
+module Util = struct
   let re_for_query_sep = Str.regexp "&"
 
   let re_for_query_kv = Str.regexp "="
@@ -195,7 +195,7 @@ module HttpUtil = struct
           replacef tbl (List.nth kvs 0) (List.nth kvs 1);
           tbl
         end
-        else raise (HttpError HttpStatus.BadRequest)) tbl qs
+        else raise (HttpError Status.BadRequest)) tbl qs
 
   let log s = 
     (*
@@ -206,16 +206,16 @@ module HttpUtil = struct
   let http_error st = raise (HttpError st)
 end
 
-module HttpContent = struct
-  open HttpUtil
-  open HttpStatus
+module Content = struct
+  open Util
+  open Status
 
   type t =
     | None
     | TextPlain of string
     | TextHtml of string
     | ApplicationOctetStream of string
-    | ApplicationXWwwFormUrlencoded of string HttpParam.t
+    | ApplicationXWwwFormUrlencoded of string Param.t
     | ApplicationXml of string
     | ApplicationJson of string
 
@@ -223,11 +223,11 @@ module HttpContent = struct
     let line = String.create content_length in
     let read_len = input inch line 0 content_length in
     if read_len = content_length then line
-    else raise (HttpError HttpStatus.BadRequest)
+    else raise (HttpError Status.BadRequest)
 
   let read_as_kv_joined_by_eq content_length inch =
     let line = read_as_string content_length inch in
-    HttpUtil.parse_kv_joined_by_eq HttpParam.replace (HttpParam.create 6) line
+    Util.parse_kv_joined_by_eq Param.replace (Param.create 6) line
 
   let create content_length inch = function
     | "text/plain" -> TextPlain (read_as_string content_length inch)
@@ -254,7 +254,7 @@ module HttpContent = struct
     | TextHtml s -> s
     | ApplicationOctetStream s -> s
     | ApplicationXWwwFormUrlencoded tbl ->
-        HttpUtil.http_error HttpStatus.InternalServerError
+        Util.http_error Status.InternalServerError
     | ApplicationXml s -> s
     | ApplicationJson s -> s
     | _ -> http_error BadRequest

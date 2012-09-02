@@ -1,14 +1,14 @@
 open String
 open OcatraHttpCommon
-open OcatraHttpCommon.HttpUtil
+open OcatraHttpCommon.Util
 
 type t = {
-  methd: HttpMethod.t;
+  methd: Method.t;
   path: string;
-  param: string HttpParam.t;
+  param: string Param.t;
   version: string;
-  header: string HttpHeader.t;
-  content: HttpContent.t;
+  header: string Header.t;
+  content: Content.t;
 }
 
 let re_for_path = Str.regexp "^[a-zA-Z0-9-_/]+"
@@ -18,16 +18,16 @@ let parse_path line =
     let eq_pos = Str.match_end () in
     let path = sub line 0 eq_pos in
     let line_len = length line in
-    let tbl = HttpParam.create 4 in
+    let tbl = Param.create 4 in
     let tbl =
     if line_len > eq_pos && line.[eq_pos] = '?' then
       let qstart = eq_pos + 1 in
       let qstr = sub line qstart (line_len - qstart) in
-      HttpUtil.parse_kv_joined_by_eq HttpParam.replace tbl qstr
+      Util.parse_kv_joined_by_eq Param.replace tbl qstr
     else tbl
     in
     (path, tbl)
-  else raise (HttpError HttpStatus.BadRequest)
+  else raise (HttpError Status.BadRequest)
 
 let re_for_request_line =
   Str.regexp "\\([A-Z]+\\) +\\([^ ]+\\) +\\(HTTP\\/[0-9]\\.[0-9]\\)"
@@ -38,17 +38,17 @@ let parse_request_line line =
     let methd_str = Str.matched_group 1 line in
     let path_and_q_str = Str.matched_group 2 line in
     let version = Str.matched_group 3 line in
-    let methd = HttpMethod.method_of_string methd_str in
+    let methd = Method.method_of_string methd_str in
     let (path, param) = parse_path path_and_q_str in
     (methd, path, param, version)
-  else raise (HttpError HttpStatus.BadRequest)
+  else raise (HttpError Status.BadRequest)
 
 let re_for_header_line = Str.regexp "\\([A-Za-z-]+\\) *: *\\([^ ]+\\)"
 
 let parse_header_line line =
   if Str.string_match re_for_header_line line 0 then
     (Str.matched_group 1 line, Str.matched_group 2 line) 
-  else raise (HttpError HttpStatus.BadRequest)
+  else raise (HttpError Status.BadRequest)
 
 let parse_header = function
   | line::ls ->
@@ -57,17 +57,17 @@ let parse_header = function
       List.fold_left (fun tbl line -> 
         log @@ "[parse_header_line] " ^ line;
         let (key, value) = parse_header_line line in
-        HttpHeader.replace tbl key value;
+        Header.replace tbl key value;
         tbl
-      ) (HttpHeader.create 8) ls
+      ) (Header.create 8) ls
     in
     {methd;
      path;
      param;
      version;
      header=tbl;
-     content=HttpContent.None}
-  | _ -> http_error HttpStatus.BadRequest
+     content=Content.None}
+  | _ -> http_error Status.BadRequest
 
 let parse_request inch =
   log "[parse]";
@@ -85,10 +85,10 @@ let parse_request inch =
   log "[content create]";
   let content =
     try
-      let content_type = HttpHeader.find req.header "Content-Type" in
-      let content_length = HttpHeader.find req.header "Content-Length" in
-      HttpContent.create (int_of_string content_length) inch content_type
-    with Not_found -> HttpContent.None
+      let content_type = Header.find req.header "Content-Type" in
+      let content_length = Header.find req.header "Content-Length" in
+      Content.create (int_of_string content_length) inch content_type
+    with Not_found -> Content.None
   in
   {methd=req.methd;
    path=req.path;
@@ -99,7 +99,7 @@ let parse_request inch =
 
 let keepalive version header =
   try 
-    let connection = HttpHeader.find header "Connection" in
+    let connection = Header.find header "Connection" in
     connection <> "close"
   with Not_found -> version = "HTTP/1.1"
 

@@ -1,6 +1,6 @@
 open Ocatra
 open OcatraHttpCommon
-open OcatraHttpCommon.HttpContent
+open OcatraHttpCommon.Content
 
 let _ =
   get "/" (fun r -> say (TextPlain "Hello, World (GET)") ());

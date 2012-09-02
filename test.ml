@@ -35,14 +35,14 @@ module HttpRequestTest = struct
     test_request header None
     (fun inch ->
       let req = parse_request inch in
-      assert_equal HttpMethod.Get req.methd;
+      assert_equal Method.Get req.methd;
       assert_equal "/hoge/foo/bar" req.path;
       assert_equal "HTTP/1.1" req.version;
-      assert_equal "zxcv" (HttpParam.find req.param "name");
-      assert_equal "123" (HttpParam.find req.param "age");
-      assert_equal "google.com" (HttpHeader.find req.header "Host");
-      assert_equal "sessionid=1qaz2wsx3edc4rf" (HttpHeader.find req.header "Cookie");
-      assert_equal HttpContent.None req.content
+      assert_equal "zxcv" (Param.find req.param "name");
+      assert_equal "123" (Param.find req.param "age");
+      assert_equal "google.com" (Header.find req.header "Host");
+      assert_equal "sessionid=1qaz2wsx3edc4rf" (Header.find req.header "Cookie");
+      assert_equal Content.None req.content
     )
 
   let test_parse_ok2 () =
@@ -55,17 +55,17 @@ module HttpRequestTest = struct
     test_request header body
     (fun inch ->
       let req = parse_request inch in
-      assert_equal HttpMethod.Post req.methd;
+      assert_equal Method.Post req.methd;
       assert_equal "/hoge/foo/bar" req.path;
       assert_equal "HTTP/1.1" req.version;
-      assert_equal "google.com:8080" (HttpHeader.find req.header "Host");
-      assert_equal "sessionid=1qaz2wsx3edc4rf" (HttpHeader.find req.header "Cookie");
+      assert_equal "google.com:8080" (Header.find req.header "Host");
+      assert_equal "sessionid=1qaz2wsx3edc4rf" (Header.find req.header "Cookie");
       match req.content with
-      | HttpContent.ApplicationXWwwFormUrlencoded params ->
-          assert_equal 3 (HttpParam.length params);
-          assert_equal "komamitsu" (HttpParam.find params "name");
-          assert_equal "73" (HttpParam.find params "age");
-          assert_equal "x" (HttpParam.find params "blood")
+      | Content.ApplicationXWwwFormUrlencoded params ->
+          assert_equal 3 (Param.length params);
+          assert_equal "komamitsu" (Param.find params "name");
+          assert_equal "73" (Param.find params "age");
+          assert_equal "x" (Param.find params "blood")
       | _ -> failwith "wrong content_type"
     )
 
@@ -78,17 +78,17 @@ module HttpRequestTest = struct
     test_request header None
     (fun inch ->
       let test () = parse_request inch in
-      assert_raises (HttpError HttpStatus.BadRequest) test
+      assert_raises (HttpError Status.BadRequest) test
     )
 
   let test_keepalive () =
-    let header = HttpHeader.create 4 in
+    let header = Header.create 4 in
     assert_equal true @@ keepalive "HTTP/1.1" header;
     assert_equal false @@ keepalive "HTTP/1.0" header;
-    HttpHeader.replace header "Connection" "close";
+    Header.replace header "Connection" "close";
     assert_equal false @@ keepalive "HTTP/1.1" header;
     assert_equal false @@ keepalive "HTTP/1.0" header;
-    HttpHeader.replace header "Connection" "Keep-Alive";
+    Header.replace header "Connection" "Keep-Alive";
     assert_equal true @@ keepalive "HTTP/1.1" header;
     assert_equal true @@ keepalive "HTTP/1.0" header
  
@@ -105,7 +105,7 @@ end
 module HttpResponseTest = struct
   open OcatraHttpResponse
 
-  let test_response ?(status=HttpStatus.OK) ?(header=HttpHeader.create 0) content f =
+  let test_response ?(status=Status.OK) ?(header=Header.create 0) content f =
     let filename = "test_response.txt" in
     let och = open_out filename in
     response och @@ create_response ~status:status ~header:header content ();
@@ -116,13 +116,13 @@ module HttpResponseTest = struct
     Unix.unlink filename
 
   let test_ok1 () =
-    test_response HttpContent.None (fun inch ->
+    test_response Content.None (fun inch ->
       assert_equal "HTTP/1.1 200 OK\r" @@ input_line inch
     )
 
   let test_ok2 () =
     let body = "Hello, World" in
-    test_response (HttpContent.TextPlain body)
+    test_response (Content.TextPlain body)
       (fun inch ->
         assert_equal "HTTP/1.1 200 OK\r" @@ input_line inch;
         assert_equal "Content-Type: text/plain\r" @@ input_line inch;
@@ -132,7 +132,7 @@ module HttpResponseTest = struct
       )
 
   let test_ng_not_found () =
-    test_response ~status:HttpStatus.NotFound HttpContent.None (fun inch ->
+    test_response ~status:Status.NotFound Content.None (fun inch ->
       assert_equal "HTTP/1.1 404 Not Found\r" @@ input_line inch
     )
 

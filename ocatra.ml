@@ -28,21 +28,21 @@ let run ?(port=59876) () =
     (fun req ->
       let route =
         match req.methd with
-        | HttpMethod.Get -> get_routes
-        | HttpMethod.Post -> post_routes
-        | HttpMethod.Put -> put_routes
-        | HttpMethod.Delete -> delete_routes
+        | Method.Get -> get_routes
+        | Method.Post -> post_routes
+        | Method.Put -> put_routes
+        | Method.Delete -> delete_routes
       in
       try
         let proc = Routes.find route req.path in proc req
       with 
       | HttpError st -> create_response ~status:st
-          (HttpContent.TextPlain (HttpStatus.string_of_status st)) ()
-      | Not_found -> create_response ~status:HttpStatus.NotFound
-          (HttpContent.TextPlain "Not found") ()
+          (Content.TextPlain (Status.string_of_status st)) ()
+      | Not_found -> create_response ~status:Status.NotFound
+          (Content.TextPlain "Not found") ()
     ) ()
 
 let say = OcatraHttpResponse.create_response
 
-let (++>) req = HttpParam.find req.param
+let (++>) req = Param.find req.param
 

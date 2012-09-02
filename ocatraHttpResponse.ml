@@ -1,14 +1,14 @@
 open String
 open OcatraHttpCommon
-open OcatraHttpCommon.HttpUtil
+open OcatraHttpCommon.Util
 
 type t = {
-  status: HttpStatus.t;
-  header: string HttpHeader.t;
-  content: HttpContent.t;
+  status: Status.t;
+  header: string Header.t;
+  content: Content.t;
 }
 
-let create_response ?(status=HttpStatus.OK) ?(header=HttpHeader.create 0) content () =
+let create_response ?(status=Status.OK) ?(header=Header.create 0) content () =
   {status; header; content}
 
 let response out_ch res =
@@ -17,15 +17,15 @@ let response out_ch res =
   let content = res.content in
   log "[response]";
   output_string out_ch
-    ("HTTP/1.1 " ^ HttpStatus.string_of_status status ^ "\r\n");
-  HttpHeader.iter
+    ("HTTP/1.1 " ^ Status.string_of_status status ^ "\r\n");
+  Header.iter
     (fun k v -> output_string out_ch @@ k ^ ": " ^ k ^ "\r\n") header;
   match content with
-  | HttpContent.None -> ()
+  | Content.None -> ()
   | c -> begin
     output_string out_ch @@ "Content-Type: " ^ 
-      HttpContent.string_of_content_type c ^ "\r\n";
-    let body = HttpContent.string_of_content_body c in
+      Content.string_of_content_type c ^ "\r\n";
+    let body = Content.string_of_content_body c in
     output_string out_ch @@ "Content-Length: " ^ 
       string_of_int (length body) ^ "\r\n";
     output_string out_ch "\r\n";
