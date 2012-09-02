@@ -1,9 +1,9 @@
 open OUnit
 open String
-open HttpCommon
+open OcatraHttpCommon
 
 module HttpRequestTest = struct
-  open HttpRequest
+  open OcatraHttpRequest
 
   (* don't include "Content-Length" in header *)
   let test_request header body f =
@@ -103,7 +103,7 @@ module HttpRequestTest = struct
 end
 
 module HttpResponseTest = struct
-  open HttpResponse
+  open OcatraHttpResponse
 
   let test_response ?(status=HttpStatus.OK) ?(header=HttpHeader.create 0) content f =
     let filename = "test_response.txt" in

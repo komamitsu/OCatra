@@ -1,6 +1,6 @@
 open String
-open HttpCommon
-open HttpCommon.HttpUtil
+open OcatraHttpCommon
+open OcatraHttpCommon.HttpUtil
 
 type t = {
   methd: HttpMethod.t;

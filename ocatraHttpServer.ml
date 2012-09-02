@@ -1,7 +1,7 @@
 open Unix
-open HttpCommon
-open HttpRequest
-open HttpResponse
+open OcatraHttpCommon
+open OcatraHttpRequest
+open OcatraHttpResponse
 
 let set_keepalive socket = function
   | Some ka -> setsockopt_float socket SO_RCVTIMEO ka
@@ -29,7 +29,7 @@ let start port proc ?(keepalive=Some(15.0)) () =
           flush out_ch;
 
           match keepalive with
-            | Some _ when (HttpRequest.keepalive req.version req.HttpRequest.header) -> worker_loop ()
+            | Some _ when (OcatraHttpRequest.keepalive req.version req.OcatraHttpRequest.header) -> worker_loop ()
             | _ -> ()
         in
         try worker_loop () with _ -> ();

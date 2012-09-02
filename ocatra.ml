@@ -1,9 +1,9 @@
-open HttpCommon
-open HttpRequest
-open HttpResponse
+open OcatraHttpCommon
+open OcatraHttpRequest
+open OcatraHttpResponse
 
 module Proc = struct
-  type t = HttpRequest.t -> HttpResponse.t
+  type t = OcatraHttpRequest.t -> OcatraHttpResponse.t
 end
 
 module Routes = struct
@@ -24,7 +24,7 @@ let put path f = Routes.bind put_routes path f
 let delete path f = Routes.bind delete_routes path f
 
 let run ?(port=59876) () =
-  HttpServer.start port
+  OcatraHttpServer.start port
     (fun req ->
       let route =
         match req.methd with
@@ -42,7 +42,7 @@ let run ?(port=59876) () =
           (HttpContent.TextPlain "Not found") ()
     ) ()
 
-let say = HttpResponse.create_response
+let say = OcatraHttpResponse.create_response
 
 let (++>) req = HttpParam.find req.param
 
