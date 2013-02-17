@@ -1,3 +1,4 @@
+open Lwt
 open String
 open OcatraCommon
 open OcatraHttpCommon
@@ -17,20 +18,19 @@ let response out_ch res =
   let header = res.header in
   let content = res.content in
   log "[response]";
-  output_string out_ch
-    ("HTTP/1.1 " ^ Status.string_of_status status ^ "\r\n");
+  ignore @@ Lwt_io.write out_ch ("HTTP/1.1 " ^ Status.string_of_status status ^ "\r\n");
   Header.iter
-    (fun k v -> output_string out_ch @@ k ^ ": " ^ k ^ "\r\n") header;
+    (fun k v -> ignore @@ Lwt_io.write out_ch @@ k ^ ": " ^ k ^ "\r\n") header;
   match content with
   | Content.None -> ()
   | c -> begin
-    output_string out_ch @@ "Content-Type: " ^ 
+    ignore @@ Lwt_io.write out_ch @@ "Content-Type: " ^ 
       Content.string_of_content_type c ^ "\r\n";
     let body = Content.string_of_content_body c in
-    output_string out_ch @@ "Content-Length: " ^ 
+    ignore @@ Lwt_io.write out_ch @@ "Content-Length: " ^ 
       string_of_int (length body) ^ "\r\n";
-    output_string out_ch "\r\n";
-    output_string out_ch body
+    ignore @@ Lwt_io.write out_ch "\r\n";
+    ignore @@ Lwt_io.write out_ch body
   end;
-  flush out_ch
+  ignore @@ Lwt_io.flush out_ch
 

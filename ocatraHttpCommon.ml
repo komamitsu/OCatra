@@ -1,3 +1,4 @@
+open Lwt
 open Unix
 open Printf
 open OcatraCommon
@@ -210,23 +211,26 @@ module Content = struct
 
   let read_as_string content_length inch =
     let line = String.create content_length in
-    let read_len = input inch line 0 content_length in
-    if read_len = content_length then line
-    else raise (HttpError Status.BadRequest)
+    Lwt_io.read_into inch line 0 content_length >>=
+    fun read_len ->
+      if read_len = content_length then (return line)
+      else raise (HttpError Status.BadRequest)
 
   let read_as_kv_joined_by_eq content_length inch =
-    let line = read_as_string content_length inch in
-    Util.parse_kv_joined_by_eq Param.replace (Param.create 6) line
+    read_as_string content_length inch >>= 
+    fun line -> return @@ Util.parse_kv_joined_by_eq Param.replace (Param.create 6) line
 
-  let create content_length inch = function
-    | "text/plain" -> TextPlain (read_as_string content_length inch)
-    | "text/html" -> TextHtml (read_as_string content_length inch)
-    | "application/octet-stream" ->
-        ApplicationOctetStream (read_as_string content_length inch)
-    | "application/x-www-form-urlencoded" ->
-        ApplicationXWwwFormUrlencoded (read_as_kv_joined_by_eq content_length inch)
-    | "application/xml" -> ApplicationXml (read_as_string content_length inch)
-    | "application/json" -> ApplicationJson (read_as_string content_length inch)
+  let create content_length inch content_type =
+    let ras () = read_as_string content_length inch in
+    match content_type with
+    | "text/plain" -> ras () >>= fun s -> return (TextPlain s)
+    | "text/html" -> ras () >>= fun s -> return (TextHtml s)
+    | "application/octet-stream" -> ras () >>= fun s -> return (ApplicationOctetStream s)
+    | "application/x-www-form-urlencoded" -> 
+        read_as_kv_joined_by_eq content_length inch >>=
+          fun p -> return (ApplicationXWwwFormUrlencoded p)
+    | "application/xml" -> ras () >>= fun s -> return (ApplicationXml s)
+    | "application/json" -> ras () >>= fun s -> return (ApplicationJson s)
     | _ -> raise (HttpError BadRequest)
 
   let string_of_content_type = function

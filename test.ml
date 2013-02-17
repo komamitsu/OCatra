@@ -1,3 +1,4 @@
+open Lwt
 open OUnit
 open String
 open OcatraCommon
@@ -22,9 +23,9 @@ module HttpRequestTest = struct
     end;
     close_out och;
 
-    let inch = open_in filename in
-    (f inch);
-    close_in inch;
+    ignore (
+      Lwt_io.open_file Lwt_io.input filename >>= fun inch -> f inch; Lwt_io.close inch
+    );
     Unix.unlink filename
 
   let test_parse_ok1 () =
@@ -35,15 +36,17 @@ module HttpRequestTest = struct
     in
     test_request header None
     (fun inch ->
-      let req = parse_request inch in
-      assert_equal Method.Get req.methd;
-      assert_equal "/hoge/foo/bar" req.path;
-      assert_equal "HTTP/1.1" req.version;
-      assert_equal "zxcv" (Param.find req.param "name");
-      assert_equal "123" (Param.find req.param "age");
-      assert_equal "google.com" (Header.find req.header "Host");
-      assert_equal "sessionid=1qaz2wsx3edc4rf" (Header.find req.header "Cookie");
-      assert_equal Content.None req.content
+      parse_request inch >>=
+        fun req ->
+          assert_equal Method.Get req.methd;
+          assert_equal "/hoge/foo/bar" req.path;
+          assert_equal "HTTP/1.1" req.version;
+          assert_equal "zxcv" (Param.find req.param "name");
+          assert_equal "123" (Param.find req.param "age");
+          assert_equal "google.com" (Header.find req.header "Host");
+          assert_equal "sessionid=1qaz2wsx3edc4rf" (Header.find req.header "Cookie");
+          assert_equal Content.None req.content;
+          return_unit
     )
 
   let test_parse_ok2 () =
@@ -55,19 +58,21 @@ module HttpRequestTest = struct
     let body = Some "name=komamitsu&age=73&blood=x" in
     test_request header body
     (fun inch ->
-      let req = parse_request inch in
-      assert_equal Method.Post req.methd;
-      assert_equal "/hoge/foo/bar" req.path;
-      assert_equal "HTTP/1.1" req.version;
-      assert_equal "google.com:8080" (Header.find req.header "Host");
-      assert_equal "sessionid=1qaz2wsx3edc4rf" (Header.find req.header "Cookie");
-      match req.content with
-      | Content.ApplicationXWwwFormUrlencoded params ->
-          assert_equal 3 (Param.length params);
-          assert_equal "komamitsu" (Param.find params "name");
-          assert_equal "73" (Param.find params "age");
-          assert_equal "x" (Param.find params "blood")
-      | _ -> failwith "wrong content_type"
+      parse_request inch >>=
+        fun req ->
+          assert_equal Method.Post req.methd;
+          assert_equal "/hoge/foo/bar" req.path;
+          assert_equal "HTTP/1.1" req.version;
+          assert_equal "google.com:8080" (Header.find req.header "Host");
+          assert_equal "sessionid=1qaz2wsx3edc4rf" (Header.find req.header "Cookie");
+          match req.content with
+          | Content.ApplicationXWwwFormUrlencoded params ->
+              assert_equal 3 (Param.length params);
+              assert_equal "komamitsu" (Param.find params "name");
+              assert_equal "73" (Param.find params "age");
+              assert_equal "x" (Param.find params "blood");
+              return_unit
+          | _ -> failwith "wrong content_type"
     )
 
   let test_parse_ng_comma_missing () =
@@ -108,9 +113,12 @@ module HttpResponseTest = struct
 
   let test_response ?(status=Status.OK) ?(header=Header.create 0) content f =
     let filename = "test_response.txt" in
-    let och = open_out filename in
-    response och @@ create_response ~status:status ~header:header content ();
-    close_out och;
+    ignore (
+      Lwt_io.open_file Lwt_io.output filename >>=
+        fun och ->
+          response och @@ create_response ~status:status ~header:header content ();
+          Lwt_io.close och
+    );
     let inch = open_in filename in
     (f inch);
     close_in inch;

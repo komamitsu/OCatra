@@ -1,3 +1,4 @@
+open Lwt
 open String
 open OcatraCommon
 open OcatraHttpCommon
@@ -73,30 +74,33 @@ let parse_header = function
 let parse_request inch =
   log "[parse]";
   let rec _parse ls =
-    let line = try input_line inch with End_of_file -> "" in
-    let len = length line in
-    let line = if len > 0 && line.[len - 1] = '\r' then sub line 0 (len - 1) else line in
-    log @@ "[input_line] length=" ^ (string_of_int @@ String.length line) ^ ", line=" ^ line;
-    if line = "" then List.rev ls
-    else _parse (line::ls)
+    (try Lwt_io.read_line inch with End_of_file -> return "") >>=
+      fun line ->
+        let len = length line in
+        let line = if len > 0 && line.[len - 1] = '\r' then sub line 0 (len - 1) else line in
+        log @@ "[input_line] length=" ^ (string_of_int @@ String.length line) ^ ", line=" ^ line;
+        if line = "" then return (List.rev ls) else _parse (line::ls)
   in
-  let ls = _parse [] in
-  log "[parse_header]";
-  let req = parse_header ls in
-  log "[content create]";
-  let content =
-    try
-      let content_type = Header.find req.header "Content-Type" in
-      let content_length = Header.find req.header "Content-Length" in
-      Content.create (int_of_string content_length) inch content_type
-    with Not_found -> Content.None
-  in
-  {methd=req.methd;
-   path=req.path;
-   param=req.param;
-   version=req.version;
-   header=req.header;
-   content}
+  _parse [] >>=
+    fun ls ->
+      log "[parse_header]";
+      let req = parse_header ls in
+      log "[content create]";
+      begin
+        try
+          let content_type = Header.find req.header "Content-Type" in
+          let content_length = Header.find req.header "Content-Length" in
+          Content.create (int_of_string content_length) inch content_type
+        with Not_found -> (return Content.None)
+      end >>=
+        fun content ->
+          return
+            {methd=req.methd;
+             path=req.path;
+             param=req.param;
+             version=req.version;
+             header=req.header;
+             content}
 
 let keepalive version header =
   try 
