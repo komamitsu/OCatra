@@ -14,10 +14,9 @@ let start port proc ?(keepalive=Some(15.0)) () =
   bind server_sock (ADDR_INET (address, port));
   listen server_sock 10;
 
-  while true do
-    ignore (
+  let rec accept_loop () =
     accept server_sock >>= 
-      fun (client_sock, client_addr) ->
+      (fun (client_sock, client_addr) ->
         set_keepalive client_sock keepalive;
 
         let in_ch = Lwt_io.of_fd Lwt_io.input client_sock in
@@ -28,16 +27,17 @@ let start port proc ?(keepalive=Some(15.0)) () =
             fun req ->
               let res = proc req in
               OcatraHttpResponse.response out_ch res;
-              ignore @@ Lwt_io.flush out_ch;
-
-              match keepalive with
-                | Some _ when OcatraHttpRequest.keepalive req.OcatraHttpRequest.version req.OcatraHttpRequest.header -> worker_loop ()
-                | _ -> return_unit
+              Lwt_io.flush out_ch >>=
+                fun _ ->
+                  match keepalive with
+                    | Some _ when OcatraHttpRequest.keepalive req.OcatraHttpRequest.version req.OcatraHttpRequest.header -> worker_loop ()
+                    | _ -> return_unit
         in
-        ignore @@ begin
+        begin
           try worker_loop () with _ -> return_unit
-        end;
-        close client_sock 
-    )
-  done
+        end >>= fun _ -> close client_sock 
+      ) >>= accept_loop
+  in
+
+  Lwt_main.run @@ accept_loop ()
 
