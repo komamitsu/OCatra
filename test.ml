@@ -115,14 +115,16 @@ module HttpResponseTest = struct
     let filename = "test_response.txt" in
     ignore (
       Lwt_io.open_file Lwt_io.output filename >>=
-        fun och ->
+        (fun och -> 
           response och @@ create_response ~status:status ~header:header content ();
-          Lwt_io.close och
-    );
-    let inch = open_in filename in
-    (f inch);
-    close_in inch;
-    Unix.unlink filename
+          Lwt_io.close och) >>= 
+        (fun _ ->
+          let inch = open_in filename in
+          (f inch);
+          close_in inch;
+          Unix.unlink filename;
+          Lwt.return_unit)
+    )
 
   let test_ok1 () =
     test_response Content.None (fun inch ->
