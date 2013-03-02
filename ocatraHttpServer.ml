@@ -12,7 +12,7 @@ let start port proc ?(keepalive=Some(15.0)) () =
   setsockopt server_sock SO_REUSEADDR true;
   let address = Unix.inet_addr_any in
   bind server_sock (ADDR_INET (address, port));
-  listen server_sock 10;
+  listen server_sock 1000;
 
   let rec accept_loop () =
     accept server_sock >>= 
@@ -23,17 +23,24 @@ let start port proc ?(keepalive=Some(15.0)) () =
         let out_ch = Lwt_io.of_fd Lwt_io.output client_sock in
 
         let rec worker_loop () =
-          OcatraHttpRequest.parse_request in_ch >>=
-            fun req ->
-              let res = proc req in
-              OcatraHttpResponse.response out_ch res;
-              Lwt_io.flush out_ch >>=
-                fun _ ->
+          try_lwt
+            OcatraHttpRequest.parse_request in_ch >>=
+              fun req ->
+                let res = proc req in
+                OcatraHttpResponse.response out_ch res;
+                Lwt_io.flush out_ch >>
                   match keepalive with
-                    | Some _ when OcatraHttpRequest.keepalive req.OcatraHttpRequest.version req.OcatraHttpRequest.header -> worker_loop ()
-                    | _ -> return_unit
+                  | Some _ when OcatraHttpRequest.keepalive req.OcatraHttpRequest.version req.OcatraHttpRequest.header -> worker_loop ()
+                  | _ -> return_unit
+          with
+          | End_of_file -> Lwt_unix.close client_sock
+          | e -> (
+              Lwt_io.print (Printexc.to_string e) >>
+              Lwt_io.flush Lwt_io.stdout >>
+              Lwt_unix.close client_sock
+          )
         in
-        ignore (finalize worker_loop (fun _ -> Lwt_unix.close client_sock));
+        ignore (worker_loop ());
         accept_loop ()
       )
   in

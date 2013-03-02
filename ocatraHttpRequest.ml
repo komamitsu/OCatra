@@ -74,7 +74,7 @@ let parse_header = function
 let parse_request inch =
   log "[parse]";
   let rec _parse ls =
-    (try Lwt_io.read_line inch with End_of_file -> return "") >>=
+    Lwt_io.read_line inch >>=
       fun line ->
         let len = length line in
         let line = if len > 0 && line.[len - 1] = '\r' then sub line 0 (len - 1) else line in
