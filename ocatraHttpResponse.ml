@@ -17,20 +17,20 @@ let response out_ch res =
   let status = res.status in
   let header = res.header in
   let content = res.content in
-  log "[response]";
-  ignore @@ Lwt_io.write out_ch ("HTTP/1.1 " ^ Status.string_of_status status ^ "\r\n");
+  let header_buf = Buffer.create 4096 in
   Header.iter
-    (fun k v -> ignore @@ Lwt_io.write out_ch @@ k ^ ": " ^ k ^ "\r\n") header;
+    (fun k v -> Buffer.add_string header_buf @@ k ^ ": " ^ k ^ "\r\n") header;
+  log "[response]";
+  Lwt_io.write out_ch ("HTTP/1.1 " ^ Status.string_of_status status ^ "\r\n") >>
+  Lwt_io.write out_ch @@ Buffer.contents header_buf >>
   match content with
-  | Content.None -> ()
-  | c -> begin
-    ignore @@ Lwt_io.write out_ch @@ "Content-Type: " ^ 
-      Content.string_of_content_type c ^ "\r\n";
+  | Content.None -> return_unit
+  | c ->
+    Lwt_io.write out_ch @@
+      "Content-Type: " ^ Content.string_of_content_type c ^ "\r\n" >>
     let body = Content.string_of_content_body c in
-    ignore @@ Lwt_io.write out_ch @@ "Content-Length: " ^ 
-      string_of_int (length body) ^ "\r\n";
-    ignore @@ Lwt_io.write out_ch "\r\n";
-    ignore @@ Lwt_io.write out_ch body
-  end;
-  ignore @@ Lwt_io.flush out_ch
+    Lwt_io.write out_ch @@
+      "Content-Length: " ^ string_of_int (length body) ^ "\r\n\r\n" >>
+    Lwt_io.write out_ch body >>
+    Lwt_io.flush out_ch
 

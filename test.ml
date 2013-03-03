@@ -116,7 +116,7 @@ module HttpResponseTest = struct
     ignore (
       Lwt_io.open_file Lwt_io.output filename >>=
         (fun och -> 
-          response och @@ create_response ~status:status ~header:header content ();
+          response och @@ create_response ~status:status ~header:header content () >>
           Lwt_io.close och) >>= 
         (fun _ ->
           let inch = open_in filename in

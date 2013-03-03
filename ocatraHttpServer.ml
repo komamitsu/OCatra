@@ -27,13 +27,12 @@ let start port proc ?(keepalive=Some(15.0)) () =
             OcatraHttpRequest.parse_request in_ch >>=
               fun req ->
                 let res = proc req in
-                OcatraHttpResponse.response out_ch res;
+                OcatraHttpResponse.response out_ch res >>
                 Lwt_io.flush out_ch >>
                   match keepalive with
                   | Some _ when OcatraHttpRequest.keepalive req.OcatraHttpRequest.version req.OcatraHttpRequest.header -> worker_loop ()
                   | _ -> return_unit
           with
-          | End_of_file -> Lwt_unix.close client_sock
           | e -> (
               Lwt_io.print (Printexc.to_string e) >>
               Lwt_io.flush Lwt_io.stdout >>
