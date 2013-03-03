@@ -20,7 +20,7 @@ let response out_ch res =
   let header_buf = Buffer.create 4096 in
   Header.iter
     (fun k v -> Buffer.add_string header_buf @@ k ^ ": " ^ k ^ "\r\n") header;
-  log "[response]";
+  log "[response]" >>
   Lwt_io.write out_ch ("HTTP/1.1 " ^ Status.string_of_status status ^ "\r\n") >>
   Lwt_io.write out_ch @@ Buffer.contents header_buf >>
   match content with

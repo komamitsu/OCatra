@@ -12,7 +12,7 @@ let start port proc ?(keepalive=Some(15.0)) () =
   setsockopt server_sock SO_REUSEADDR true;
   let address = Unix.inet_addr_any in
   bind server_sock (ADDR_INET (address, port));
-  listen server_sock 1000;
+  listen server_sock 256;
 
   let rec accept_loop () =
     accept server_sock >>= 
@@ -31,8 +31,9 @@ let start port proc ?(keepalive=Some(15.0)) () =
                 Lwt_io.flush out_ch >>
                   match keepalive with
                   | Some _ when OcatraHttpRequest.keepalive req.OcatraHttpRequest.version req.OcatraHttpRequest.header -> worker_loop ()
-                  | _ -> return_unit
+                  | _ -> Lwt_unix.close client_sock
           with
+          | End_of_file -> Lwt_unix.close client_sock
           | e -> (
               Lwt_io.print (Printexc.to_string e) >>
               Lwt_io.flush Lwt_io.stdout >>
