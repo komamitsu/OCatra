@@ -45,5 +45,64 @@ let start port proc ?(keepalive=Some(15.0)) () =
       )
   in
 
-  Lwt_main.run @@ accept_loop ()
+  let num_of_children = 4 in
 
+  let children = Hashtbl.create num_of_children in
+
+  let rec create_process n =
+    if n <= 0 then
+      ()
+    else begin
+      let pid = Unix.fork () in
+      if pid = 0 then
+        begin
+          Sys.set_signal Sys.sigterm Sys.Signal_default;
+          Sys.set_signal Sys.sigint Sys.Signal_default;
+          Lwt_main.run @@ accept_loop ()
+        end
+      else
+        Hashtbl.add children pid true;
+        create_process (n - 1)
+    end
+  in
+
+  let kill_children () =
+    Hashtbl.iter (fun pid _ -> Unix.kill pid Sys.sigterm) children
+  in
+
+  let sighandler signal =
+    begin
+      print_endline "sighandler is called";
+      kill_children ();
+      Unix.sleep 1
+    end
+  in
+
+  Sys.set_signal Sys.sigterm (Sys.Signal_handle sighandler);
+  Sys.set_signal Sys.sigint (Sys.Signal_handle sighandler);
+
+  (* TODO: Create Config module *)
+  ignore (create_process num_of_children);
+
+  let rec wait_children () =
+    if Hashtbl.length children = 0 then ()
+    else begin
+      let (pid, _) = Unix.waitpid [Unix.WNOHANG] (-1) in
+      if pid > 0 then
+        begin
+          if Hashtbl.mem children pid then
+            begin
+              Hashtbl.remove children pid;
+              wait_children ()
+            end
+          else
+            begin
+              print_endline (Printf.sprintf "Unexpected process id: %d\n" pid);
+              kill_children ()
+            end
+        end;
+      Unix.sleep 1;
+      wait_children ()
+    end
+  in
+  wait_children ()
