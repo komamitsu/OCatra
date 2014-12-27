@@ -54,7 +54,7 @@ let start conf proc =
     if n <= 0 then
       ()
     else begin
-      let pid = Unix.fork () in
+      let pid = fork () in
       if pid = 0 then
         begin
           Sys.set_signal Sys.sigterm Sys.Signal_default;
