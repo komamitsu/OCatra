@@ -7,16 +7,17 @@ let set_keepalive socket = function
   | Some ka -> setsockopt_float socket SO_RCVTIMEO ka
   | None -> ()
 
-let start port proc ?(keepalive=Some(15.0)) () =
+let start conf proc =
   let server_sock = socket PF_INET SOCK_STREAM 0 in
   setsockopt server_sock SO_REUSEADDR true;
   let address = Unix.inet_addr_any in
-  bind server_sock (ADDR_INET (address, port));
+  bind server_sock (ADDR_INET (address, (OcatraConfig.port conf)));
   listen server_sock 256;
 
   let rec accept_loop () =
     accept server_sock >>= 
       (fun (client_sock, client_addr) ->
+        let keepalive = OcatraConfig.keepalive conf in
         set_keepalive client_sock keepalive;
 
         let in_ch = Lwt_io.of_fd Lwt_io.input client_sock in
@@ -45,7 +46,7 @@ let start port proc ?(keepalive=Some(15.0)) () =
       )
   in
 
-  let num_of_children = 4 in
+  let num_of_children = (OcatraConfig.processes conf) in
 
   let children = Hashtbl.create num_of_children in
 
@@ -81,7 +82,6 @@ let start port proc ?(keepalive=Some(15.0)) () =
   Sys.set_signal Sys.sigterm (Sys.Signal_handle sighandler);
   Sys.set_signal Sys.sigint (Sys.Signal_handle sighandler);
 
-  (* TODO: Create Config module *)
   ignore (create_process num_of_children);
 
   let rec wait_children () =
@@ -89,20 +89,21 @@ let start port proc ?(keepalive=Some(15.0)) () =
     else begin
       let (pid, _) = Unix.waitpid [Unix.WNOHANG] (-1) in
       if pid > 0 then
+        if Hashtbl.mem children pid then
+          begin
+            Hashtbl.remove children pid;
+            wait_children ()
+          end
+        else
+          begin
+            print_endline (Printf.sprintf "Unexpected process id: %d\n" pid);
+            kill_children ()
+          end
+      else
         begin
-          if Hashtbl.mem children pid then
-            begin
-              Hashtbl.remove children pid;
-              wait_children ()
-            end
-          else
-            begin
-              print_endline (Printf.sprintf "Unexpected process id: %d\n" pid);
-              kill_children ()
-            end
-        end;
-      Unix.sleep 1;
-      wait_children ()
+          Unix.sleep 1;
+          wait_children ()
+        end
     end
   in
   wait_children ()

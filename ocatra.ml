@@ -24,8 +24,8 @@ let post path f = Routes.bind post_routes path f
 let put path f = Routes.bind put_routes path f
 let delete path f = Routes.bind delete_routes path f
 
-let run ?(port=19876) () =
-  OcatraHttpServer.start port
+let run ?conf:(conf=OcatraConfig.create ()) () =
+  OcatraHttpServer.start conf
     (fun req ->
       let route =
         match req.methd with
@@ -41,7 +41,7 @@ let run ?(port=19876) () =
           (Content.TextPlain (Status.string_of_status st)) ()
       | Not_found -> create_response ~status:Status.NotFound
           (Content.TextPlain "Not found") ()
-    ) ()
+    )
 
 let say = OcatraHttpResponse.create_response
 
