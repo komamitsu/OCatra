@@ -157,7 +157,7 @@ module HttpResponseTest = struct
 end
 
 module OcatraRoutesTest = struct
-  let test_ocatra_routes () =
+  let test_bind_and_find () =
     let r = OcatraRoutes.init () in
     let r = OcatraRoutes.bind r "/foo" 0 in
     let r = OcatraRoutes.bind r "/foo/abc/xyz" 1 in
@@ -165,36 +165,92 @@ module OcatraRoutesTest = struct
     let r = OcatraRoutes.bind r "/" 3 in
     let r = OcatraRoutes.bind r "/bar/hello" 4 in
     let r = OcatraRoutes.bind r "/bar/" 5 in
-    assert_equal ~msg:"0" (OcatraRoutes.find r "/foo/abc/xyz/000") @@ 1;
-    assert_equal ~msg:"1" (OcatraRoutes.find r "/foo/abc/xyz") @@ 1;
-    assert_equal ~msg:"2" (OcatraRoutes.find r "/foo/abc/xxx") @@ 2;
-    assert_equal ~msg:"4" (OcatraRoutes.find r "/foo/abc") @@ 2;
-    assert_equal ~msg:"3" (OcatraRoutes.find r "/foo/abc/") @@ 2;
-    assert_equal ~msg:"5" (OcatraRoutes.find r "/foo/abcd") @@ 0;
-    assert_equal ~msg:"6" (OcatraRoutes.find r "/foo/") @@ 0;
-    assert_equal ~msg:"7" (OcatraRoutes.find r "/foo") @@ 0;
-    assert_equal ~msg:"8" (OcatraRoutes.find r "/foox") @@ 3;
-    assert_equal ~msg:"9" (OcatraRoutes.find r "/fo") @@ 3;
-    assert_equal ~msg:"10" (OcatraRoutes.find r "/") @@ 3;
-    assert_equal ~msg:"11" (OcatraRoutes.find r "/bar/hello/you") @@ 4;
-    assert_equal ~msg:"12" (OcatraRoutes.find r "/bar/hello/you/") @@ 4;
-    assert_equal ~msg:"13" (OcatraRoutes.find r "/bar/hello/") @@ 4;
-    assert_equal ~msg:"14" (OcatraRoutes.find r "/bar/hello") @@ 4;
-    assert_equal ~msg:"15" (OcatraRoutes.find r "/bar/hell") @@ 5;
-    assert_equal ~msg:"16" (OcatraRoutes.find r "/bar/") @@ 5;
-    assert_equal ~msg:"17" (OcatraRoutes.find r "/bar") @@ 5;
-    assert_equal ~msg:"18" (OcatraRoutes.find r "/barx") @@ 3;
-    assert_equal ~msg:"19" (OcatraRoutes.find r "/ba") @@ 3
+    let r = OcatraRoutes.bind r "/reg/.*/exp" 6 in
+    let r = OcatraRoutes.bind r "/re/.*" 7 in
+    assert_equal (OcatraRoutes.find r "/foo/abc/xyz") @@ 1;
+    assert_equal (OcatraRoutes.find r "/foo/abc/xyz") @@ 1;
+    assert_equal (OcatraRoutes.find r "/foo/abc") @@ 2;
+    assert_equal (OcatraRoutes.find r "/foo/abc/") @@ 2;
+    assert_equal (OcatraRoutes.find r "/foo/") @@ 0;
+    assert_equal (OcatraRoutes.find r "/foo") @@ 0;
+    assert_equal (OcatraRoutes.find r "/") @@ 3;
+    assert_equal (OcatraRoutes.find r "/bar/hello/") @@ 4;
+    assert_equal (OcatraRoutes.find r "/bar/hello") @@ 4;
+    assert_equal (OcatraRoutes.find r "/bar/") @@ 5;
+    assert_equal (OcatraRoutes.find r "/bar") @@ 5;
+    assert_equal (OcatraRoutes.find r "/reg/foo/bar/exp") @@ 6;
+    assert_equal (OcatraRoutes.find r "/re/hello/world") @@ 7;
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/foo/abc/xyz/000");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/foo/abc/xxx");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/foo/abcd");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/foox");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/fo");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/bar/hello/you");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/bar/hello/you/");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/bar/hell");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/barx");
+    assert_raises (Not_found) (fun _ -> OcatraRoutes.find r "/ba")
 
   let suite =
-    "ocatra" >:::
+    "ocatra_routes" >:::
       [
-        "test_ocatra_routes" >:: test_ocatra_routes;
+        "test_bind_and_find" >:: test_bind_and_find;
+      ]
+end
+
+module OcatraStaticFileTest = struct
+  let prefix = "ocatratest"
+
+  let create_content suffix data =
+    let (filepath, out_ch) = Filename.open_temp_file prefix suffix in
+    output_string out_ch data;
+    close_out out_ch;
+    OcatraStaticFile.get_content filepath
+
+  let test_text_html () =
+    let data = "<html>
+<head>
+</head>
+<body>
+<p>hello world</p>
+</body>
+</html>" in
+    let content = create_content ".html" data in
+    assert_equal (Content.TextHtml data) @@ content
+
+  let test_text_plain () =
+    let data = "Hello world" in
+    let content = create_content ".txt" data in
+    assert_equal (Content.TextPlain data) @@ content
+
+  let test_application_json () =
+    let data = "{\"name\":\"komamitsu\",\"age\":99}" in
+    let content = create_content ".json" data in
+    assert_equal (Content.ApplicationJson data) @@ content
+
+  let test_application_xml () =
+    let data = "<note>
+<to>Tove</to>
+<from>Jani</from>
+<heading>Reminder</heading>
+<body>Don't forget me this weekend!</body>
+</note>" in
+    let content = create_content ".xml" data in
+    assert_equal (Content.ApplicationXml data) @@ content
+
+  let suite =
+    "ocatra_static_file" >:::
+      [
+        "test_text_html" >:: test_text_html;
+        "test_text_plain" >:: test_text_plain;
+        "test_text_application_json" >:: test_application_json;
+        "test_text_application_xml" >:: test_application_xml;
       ]
 end
 
 let _ =
   ignore (run_test_tt_main HttpResponseTest.suite);
   ignore (run_test_tt_main HttpRequestTest.suite);
-  ignore (run_test_tt_main OcatraRoutesTest.suite)
+  ignore (run_test_tt_main OcatraRoutesTest.suite);
+  ignore (run_test_tt_main OcatraStaticFileTest.suite)
 

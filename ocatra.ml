@@ -3,26 +3,26 @@ open OcatraHttpCommon
 open OcatraHttpRequest
 open OcatraHttpResponse
 
-module Proc = struct
-  type t = OcatraHttpRequest.t -> OcatraHttpResponse.t
-end
-
+let docroot_routes = ref (OcatraRoutes.init ())
 let get_routes = ref (OcatraRoutes.init ())
 let post_routes = ref (OcatraRoutes.init ())
 let put_routes = ref (OcatraRoutes.init ())
 let delete_routes = ref (OcatraRoutes.init ())
 
-let get path f =
-  get_routes := OcatraRoutes.bind !get_routes path f
+let docroot path =
+  docroot_routes := OcatraRoutes.bind !docroot_routes path path
 
-let post path f =
-  post_routes := OcatraRoutes.bind !post_routes path f
+let get path handler =
+  get_routes := OcatraRoutes.bind !get_routes path handler 
 
-let put path f =
-  put_routes := OcatraRoutes.bind !put_routes path f
+let post path handler =
+  post_routes := OcatraRoutes.bind !post_routes path handler 
 
-let delete path f =
-  delete_routes := OcatraRoutes.bind !delete_routes path f
+let put path handler =
+  put_routes := OcatraRoutes.bind !put_routes path handler 
+
+let delete path handler =
+  delete_routes := OcatraRoutes.bind !delete_routes path handler 
 
 let run ?conf:(conf=OcatraConfig.create ()) () =
   OcatraHttpServer.start conf
@@ -35,12 +35,25 @@ let run ?conf:(conf=OcatraConfig.create ()) () =
         | Method.Delete -> !delete_routes
       in
       try
-        let proc = OcatraRoutes.find routes req.path in proc req
+        let handler = OcatraRoutes.find routes req.path in
+        handler req
       with 
       | HttpError st -> create_response ~status:st
           (Content.TextPlain (Status.string_of_status st)) ()
-      | Not_found -> create_response ~status:Status.NotFound
-          (Content.TextPlain "Not found") ()
+      | Not_found -> 
+          let create_not_found () = 
+            create_response ~status:Status.NotFound
+              (Content.TextPlain "Not found") ()
+          in
+          if req.methd = Method.Get then
+            try
+              let docroot = OcatraRoutes.find !docroot_routes req.path in
+              let fullpath = Filename.concat docroot req.path in
+              let content = OcatraStaticFile.get_content req.path in
+              create_response ~status:Status.OK content ()
+            with Not_found -> create_not_found ()
+          else
+            create_not_found ()
     )
 
 let say = OcatraHttpResponse.create_response

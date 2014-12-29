@@ -14,7 +14,7 @@ let remove_tail_slath path =
 
 let bind routes path proc =
   let path = remove_tail_slath path in
-  let re = Str.regexp ("^" ^ path ^ "\\b") in
+  let re = Str.regexp ("^" ^ path ^ "$") in
   let new_route = (path, re, proc)::routes in
   List.sort (fun (path0, _, _) (path1, _, _) -> compare path1 path0) new_route
 
