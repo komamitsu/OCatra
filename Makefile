@@ -3,7 +3,7 @@ main: ocatra.cma ocatra.cmxa
 test: test.byte test.opt
 example: example.byte example.opt
 
-SOURCES = ocatraConfig.mli ocatraConfig.ml  ocatraCommon.ml ocatraHttpCommon.ml ocatraHttpRequest.ml ocatraHttpResponse.ml ocatraHttpServer.ml ocatra.ml
+SOURCES = ocatraConfig.mli ocatraConfig.ml ocatraRoutes.ml ocatraCommon.ml ocatraHttpCommon.ml ocatraHttpRequest.ml ocatraHttpResponse.ml ocatraHttpServer.ml ocatra.ml
 PACKAGES = unix,threads,str,lwt,lwt.unix,lwt.syntax
 TEST_PACKAGES = $(PACKAGES),oUnit
 SYNTAX = -syntax camlp4o,lwt.syntax

@@ -156,47 +156,45 @@ module HttpResponseTest = struct
       ]
 end
 
-module OcatraTest = struct
-  open Ocatra
-
-  let test_routes_module () =
-    let r = Routes.init () in
-    let r = Routes.bind r "/foo" 0 in
-    let r = Routes.bind r "/foo/abc/xyz" 1 in
-    let r = Routes.bind r "/foo/abc" 2 in
-    let r = Routes.bind r "/" 3 in
-    let r = Routes.bind r "/bar/hello" 4 in
-    let r = Routes.bind r "/bar/" 5 in
-    assert_equal ~msg:"0" (Routes.find r "/foo/abc/xyz/000") @@ 1;
-    assert_equal ~msg:"1" (Routes.find r "/foo/abc/xyz") @@ 1;
-    assert_equal ~msg:"2" (Routes.find r "/foo/abc/xxx") @@ 2;
-    assert_equal ~msg:"4" (Routes.find r "/foo/abc") @@ 2;
-    assert_equal ~msg:"3" (Routes.find r "/foo/abc/") @@ 2;
-    assert_equal ~msg:"5" (Routes.find r "/foo/abcd") @@ 0;
-    assert_equal ~msg:"6" (Routes.find r "/foo/") @@ 0;
-    assert_equal ~msg:"7" (Routes.find r "/foo") @@ 0;
-    assert_equal ~msg:"8" (Routes.find r "/foox") @@ 3;
-    assert_equal ~msg:"9" (Routes.find r "/fo") @@ 3;
-    assert_equal ~msg:"10" (Routes.find r "/") @@ 3;
-    assert_equal ~msg:"11" (Routes.find r "/bar/hello/you") @@ 4;
-    assert_equal ~msg:"12" (Routes.find r "/bar/hello/you/") @@ 4;
-    assert_equal ~msg:"13" (Routes.find r "/bar/hello/") @@ 4;
-    assert_equal ~msg:"14" (Routes.find r "/bar/hello") @@ 4;
-    assert_equal ~msg:"15" (Routes.find r "/bar/hell") @@ 5;
-    assert_equal ~msg:"16" (Routes.find r "/bar/") @@ 5;
-    assert_equal ~msg:"17" (Routes.find r "/bar") @@ 5;
-    assert_equal ~msg:"18" (Routes.find r "/barx") @@ 3;
-    assert_equal ~msg:"19" (Routes.find r "/ba") @@ 3
+module OcatraRoutesTest = struct
+  let test_ocatra_routes () =
+    let r = OcatraRoutes.init () in
+    let r = OcatraRoutes.bind r "/foo" 0 in
+    let r = OcatraRoutes.bind r "/foo/abc/xyz" 1 in
+    let r = OcatraRoutes.bind r "/foo/abc" 2 in
+    let r = OcatraRoutes.bind r "/" 3 in
+    let r = OcatraRoutes.bind r "/bar/hello" 4 in
+    let r = OcatraRoutes.bind r "/bar/" 5 in
+    assert_equal ~msg:"0" (OcatraRoutes.find r "/foo/abc/xyz/000") @@ 1;
+    assert_equal ~msg:"1" (OcatraRoutes.find r "/foo/abc/xyz") @@ 1;
+    assert_equal ~msg:"2" (OcatraRoutes.find r "/foo/abc/xxx") @@ 2;
+    assert_equal ~msg:"4" (OcatraRoutes.find r "/foo/abc") @@ 2;
+    assert_equal ~msg:"3" (OcatraRoutes.find r "/foo/abc/") @@ 2;
+    assert_equal ~msg:"5" (OcatraRoutes.find r "/foo/abcd") @@ 0;
+    assert_equal ~msg:"6" (OcatraRoutes.find r "/foo/") @@ 0;
+    assert_equal ~msg:"7" (OcatraRoutes.find r "/foo") @@ 0;
+    assert_equal ~msg:"8" (OcatraRoutes.find r "/foox") @@ 3;
+    assert_equal ~msg:"9" (OcatraRoutes.find r "/fo") @@ 3;
+    assert_equal ~msg:"10" (OcatraRoutes.find r "/") @@ 3;
+    assert_equal ~msg:"11" (OcatraRoutes.find r "/bar/hello/you") @@ 4;
+    assert_equal ~msg:"12" (OcatraRoutes.find r "/bar/hello/you/") @@ 4;
+    assert_equal ~msg:"13" (OcatraRoutes.find r "/bar/hello/") @@ 4;
+    assert_equal ~msg:"14" (OcatraRoutes.find r "/bar/hello") @@ 4;
+    assert_equal ~msg:"15" (OcatraRoutes.find r "/bar/hell") @@ 5;
+    assert_equal ~msg:"16" (OcatraRoutes.find r "/bar/") @@ 5;
+    assert_equal ~msg:"17" (OcatraRoutes.find r "/bar") @@ 5;
+    assert_equal ~msg:"18" (OcatraRoutes.find r "/barx") @@ 3;
+    assert_equal ~msg:"19" (OcatraRoutes.find r "/ba") @@ 3
 
   let suite =
     "ocatra" >:::
       [
-        "test_routes_module" >:: test_routes_module;
+        "test_ocatra_routes" >:: test_ocatra_routes;
       ]
 end
 
 let _ =
   ignore (run_test_tt_main HttpResponseTest.suite);
   ignore (run_test_tt_main HttpRequestTest.suite);
-  ignore (run_test_tt_main OcatraTest.suite)
+  ignore (run_test_tt_main OcatraRoutesTest.suite)
 
