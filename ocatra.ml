@@ -3,14 +3,14 @@ open OcatraHttpCommon
 open OcatraHttpRequest
 open OcatraHttpResponse
 
-let docroot_routes = ref (OcatraRoutes.init ())
+let doc_root = ref None
 let get_routes = ref (OcatraRoutes.init ())
 let post_routes = ref (OcatraRoutes.init ())
 let put_routes = ref (OcatraRoutes.init ())
 let delete_routes = ref (OcatraRoutes.init ())
 
 let docroot path =
-  docroot_routes := OcatraRoutes.bind !docroot_routes path path
+  doc_root := Some path
 
 let get path handler =
   get_routes := OcatraRoutes.bind !get_routes path handler 
@@ -46,12 +46,16 @@ let run ?conf:(conf=OcatraConfig.create ()) () =
               (Content.TextPlain "Not found") ()
           in
           if req.methd = Method.Get then
-            try
-              let docroot = OcatraRoutes.find !docroot_routes req.path in
-              let fullpath = Filename.concat docroot req.path in
-              let content = OcatraStaticFile.get_content req.path in
-              create_response ~status:Status.OK content ()
-            with Not_found -> create_not_found ()
+            match !doc_root with
+            | Some document_root ->
+              begin
+                try
+                  let fullpath = Filename.concat document_root req.path in
+                  let content = OcatraStaticFile.get_content fullpath in
+                  create_response ~status:Status.OK content ()
+                with Not_found -> create_not_found ()
+              end
+            | None -> create_not_found ()
           else
             create_not_found ()
     )

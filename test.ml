@@ -24,14 +24,34 @@ module HttpRequestTest = struct
     close_out och;
 
     ignore (
-      Lwt_io.open_file Lwt_io.input filename >>= fun inch -> f inch; Lwt_io.close inch
+      Lwt_io.open_file Lwt_io.input filename >>=
+        fun inch ->
+          f inch;
+          Lwt_io.close inch
     );
     Unix.unlink filename
+
+  let test_parse_ok0 () =
+    let header =
+      "GET /index.html HTTP/1.1\r\n" ^
+      "Host:example.com\r\n"
+    in
+    test_request header None
+    (fun inch ->
+      parse_request inch >>=
+        fun req ->
+          assert_equal Method.Get req.methd;
+          assert_equal "/index.html" req.path;
+          assert_equal "HTTP/1.1" req.version;
+          assert_equal "example.com" (Header.find req.header "Host");
+          assert_equal Content.None req.content;
+          return_unit
+    )
 
   let test_parse_ok1 () =
     let header =
       "GET /hoge/foo/bar?name=zxcv&age=123 HTTP/1.1\r\n" ^
-      "Host:google.com\r\n" ^
+      "Host:example.com\r\n" ^
       "Cookie : sessionid=1qaz2wsx3edc4rf\r\n"
     in
     test_request header None
@@ -43,7 +63,7 @@ module HttpRequestTest = struct
           assert_equal "HTTP/1.1" req.version;
           assert_equal "zxcv" (Param.find req.param "name");
           assert_equal "123" (Param.find req.param "age");
-          assert_equal "google.com" (Header.find req.header "Host");
+          assert_equal "example.com" (Header.find req.header "Host");
           assert_equal "sessionid=1qaz2wsx3edc4rf" (Header.find req.header "Cookie");
           assert_equal Content.None req.content;
           return_unit
@@ -52,7 +72,7 @@ module HttpRequestTest = struct
   let test_parse_ok2 () =
     let header =
       "POST /hoge/foo/bar HTTP/1.1\r\n" ^
-      "Host:google.com:8080\r\n" ^
+      "Host:example.com:8080\r\n" ^
       "Content-Type: application/x-www-form-urlencoded\r\n" ^
       "Cookie : sessionid=1qaz2wsx3edc4rf\r\n" in
     let body = Some "name=komamitsu&age=73&blood=x" in
@@ -63,7 +83,7 @@ module HttpRequestTest = struct
           assert_equal Method.Post req.methd;
           assert_equal "/hoge/foo/bar" req.path;
           assert_equal "HTTP/1.1" req.version;
-          assert_equal "google.com:8080" (Header.find req.header "Host");
+          assert_equal "example.com:8080" (Header.find req.header "Host");
           assert_equal "sessionid=1qaz2wsx3edc4rf" (Header.find req.header "Cookie");
           match req.content with
           | Content.ApplicationXWwwFormUrlencoded params ->
@@ -78,7 +98,7 @@ module HttpRequestTest = struct
   let test_parse_ng_comma_missing () =
     let header =
       "GET /hoge/foo/bar?name=zxcv&age=123 HTTP/1.1\r\n" ^
-      "Host:google.com\r\n" ^
+      "Host:example.com\r\n" ^
       "Cookie sessionid=1qaz2wsx3edc4rf"
     in
     test_request header None
@@ -101,6 +121,7 @@ module HttpRequestTest = struct
   let suite = 
     "http_request" >:::
       [
+        "test_parse_ok0" >:: test_parse_ok0;
         "test_parse_ok1" >:: test_parse_ok1;
         "test_parse_ok2" >:: test_parse_ok2;
         "test_parse_ng_comma_missing" >:: test_parse_ng_comma_missing;

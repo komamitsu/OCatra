@@ -13,7 +13,7 @@ type t = {
   content: Content.t;
 }
 
-let re_for_path = Str.regexp "^[a-zA-Z0-9-_/]+"
+let re_for_path = Str.regexp "^[a-zA-Z0-9-_./]+"
 
 let parse_path line =
   if Str.string_match re_for_path line 0 then
